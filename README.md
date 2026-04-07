@@ -1,3 +1,11 @@
-# MIT ACDS Course
+# MIT 16.S897: Spacecraft Attitude Determination and Control
 
-This repository contains the homeworks from MIT Course 16.S897 Spacecraft Attitude Determination and Control.  
+This repository contains homework assignments, simulation code, and reports from MIT Course **16.S897 Spacecraft Attitude Determination and Control**. 
+
+The code and report covers core ACDS concepts analyzing the NASA Starling Mission. 
+
+## File Structure 
+
+* **`src/`** - Core source code (dynamics, integrators, mathematical models, and estimation algorithms).
+* **`scripts/`** -  Simulation scripts for the homework assignments.
+* **`figures/`** - Generated plots and figures used in the reports.
