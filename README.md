@@ -6,6 +6,6 @@ The code and report covers core ACDS concepts analyzing the NASA Starling Missio
 
 ## File Structure 
 
-* **`src/`** - Core source code (dynamics, integrators, mathematical models, and estimation algorithms).
+* **`src/`** - Core source code (dynamics, integrators, dynamics models, and estimation algorithms).
 * **`scripts/`** -  Simulation scripts for the homework assignments.
 * **`figures/`** - Generated plots and figures used in the reports.
