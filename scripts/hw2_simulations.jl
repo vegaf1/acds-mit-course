@@ -66,11 +66,14 @@ for k=1:N_ω-1
     
 end
 
-plot(ω_traj_2[1,:], label="ωx", title="Simualtion about ωs", linewidth=3)
-plot!(ω_traj_2[2,:], label="ωy", linewidth=3)
-plot!(ω_traj_2[3,:], label="ωz", linewidth=3)
+all_time = range(0, step=dt_ω, length=2000)
 
-#savefig("figures/hw2/solar_panel_normal_spin.png")
+
+plot(all_time, ω_traj_2[1,:], label="ωx", title="Simulation about ωs", linewidth=3, xlabel = "Time (s)", ylabel = "Angular Velocity (rad/s)")
+plot!(all_time, ω_traj_2[2,:], label="ωy", linewidth=3)
+plot!(all_time, ω_traj_2[3,:], label="ωz", linewidth=3)
+
+#savefig("figures/hw2/solar_panel_normal_spin_updated.png")
 
 #spacecraft dynamics sim
 #no rotor momentum rate control
@@ -104,10 +107,12 @@ end
 
 q_traj = orbit_traj_combined[7:10,:]
 
-plot(q_traj[1,:], label="q1", title="Attitude Quaternion", linewidth = 3)
-plot!(q_traj[2,:], label="q2", linewidth = 3)
-plot!(q_traj[3,:], label="q3", linewidth = 3)
-plot!(q_traj[4,:], label="q4", linewidth = 3)
+plot(all_time, q_traj[1,:], label="q1", title="Attitude Quaternion", linewidth = 3, xlabel="Time (s)", ylabel="Value")
+plot!(all_time, q_traj[2,:], label="q2", linewidth = 3)
+plot!(all_time, q_traj[3,:], label="q3", linewidth = 3)
+plot!(all_time, q_traj[4,:], label="q4", linewidth = 3)
+
+#savefig("figures/hw2/attitude_quaternion_v3.png")
 
 solar_normal_ECI_traj = zeros(3, N_ω)
 
@@ -129,20 +134,24 @@ for i=1:N_ω
 
 end
 
-plot(angle_diff, ylim = [0, 180], label="pointing error", title="Pointing Error", ylabel="Degrees", linewidth=3)
+plot(all_time, angle_diff, ylim = [0, 180], label="pointing error", title="Pointing Error", ylabel="Degrees", linewidth=3, xlabel="Time (s)")
 
-#savefig("figures/hw2/pointing_error_updated.png")
+#savefig("figures/hw2/pointing_error_v3.png")
 
 #HW 2 section 3 
 #generate noisy bearing measurements along with the ground truth 
 #and covariance matrices
 
-b_measurements, noisy_b_measurements, all_P = generate_noisy_bearing_measurements(0.002, 100)
+#from the blue canyon 6u cubesat spec sheet 
+pointing_accuracy = 0.002
+N_measurements = 100
+
+b_measurements, noisy_b_measurements, all_P = generate_noisy_bearing_measurements(pointing_accuracy, N_measurements)
 
 #check error statistics
-angle_diff = zeros(100)
+angle_diff = zeros(N_measurements)
 
-for i=1:100
+for i=1:N_measurements
 
     angle_rad = acos(dot(b_measurements[:,i], noisy_b_measurements[:,i]))
 
@@ -153,16 +162,13 @@ end
 scatter([angle_diff], title="Angle Difference", xlabel="Measurement Number", ylabel = " Deviation (Degrees) ", label="angle difference")
 
 #calculate the mean from all these angle differences 
-mean = sum(angle_diff)/100
+mean = sum(angle_diff)/N_measurements
 
-plot!(ones(100)*mean, linewidth=3, label="average")
+plot!(ones(N_measurements)*mean, linewidth=3, label="average")
 
 #savefig("figures/hw2/measurement_error.png")
 
 #HW2 part 4 
-
-#from the blue canyon 6u cubesat spec sheet 
-pointing_accuracy = 0.002
 function montecarlo_setup(N_measurements)
 
     b_measurements, noisy_b_measurements, all_P = generate_noisy_bearing_measurements(pointing_accuracy, N_measurements)
@@ -183,7 +189,6 @@ function montecarlo_setup(N_measurements)
     return error_deg_sdp, error_deg_svd
 
 end
-
 
 montecarlo_trials = 50
 sdp_error = zeros(montecarlo_trials)
@@ -206,14 +211,12 @@ plot(svd_error, linewidth=3, title="SVD Wabha Rotation Error", xlabel="MonteCarl
 #savefig("figures/hw2/svd_wabha_error.png")
 
 #run a timing simulation 
-b_measurements, noisy_b_measurements, all_P = generate_noisy_bearing_measurements(pointing_accuracy, 100)
+b_measurements, noisy_b_measurements, all_P = generate_noisy_bearing_measurements(pointing_accuracy, N_measurements)
 
 #come up with a random attitdue 
 Q_true = exp(hat(randn(3)))
 
-i_m = create_inertial_measurements(Q_true, b_measurements, 100)
-
-N_measurements = 100
+i_m = create_inertial_measurements(Q_true, b_measurements, N_measurements)
 
 #get timing results 
 t_sdp = @belapsed solve_wabha_sdp($noisy_b_measurements, $i_m, $N_measurements)
