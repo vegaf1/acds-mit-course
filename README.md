@@ -1,4 +1,4 @@
-# MIT 16.S897: Spacecraft Attitude Determination and Control
+# Spacecraft Attitude Determination and Control (MIT 16.S897)
 
 This repository contains the report and simulation code from MIT Course **16.S897 Spacecraft Attitude Determination and Control**. 
 
