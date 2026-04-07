@@ -513,7 +513,10 @@ scatter!([1], [0], [0], markersize=5, markercolor="green")
 
 #equations for the perturbed inertia
 Js = (ωs/norm(ωs))'*J_b_SI_perturbed*(ωs/norm(ωs))
+
+#we get this from the superspin condition
 ρs = ωs_magnitude*(1.2*J_b_SI_perturbed[3,3] - Js)
+
 #desired spin vector on the left
 ρ0 = [ωs'; hat(ωs)]\[ρs*ωs_magnitude; -hat(ωs)*J_b_SI_perturbed*ωs]
 
@@ -547,8 +550,10 @@ orbit_traj_combined = zeros(16, total_N)
 orbit_traj_combined[:,1] = [eci0_km; [1,0,0,0]; ω0_2_perturbed; ρ0]
 
 for k=1:total_N-1
+    #using the wrong dynamics here...
+    #orbit_traj_combined[:,k+1] = RK4_integrator_wcontrol(orbit_attitude_dynamics, orbit_traj_combined[:,k], zeros(3))
 
-    orbit_traj_combined[:,k+1] = RK4_integrator_wcontrol(orbit_attitude_dynamics, orbit_traj_combined[:,k], zeros(3))
+    orbit_traj_combined[:,k+1] = RK4_integrator_fullsim(orbit_attitude_dynamics, orbit_traj_combined[:,k], zeros(3))
 
 end
 
@@ -559,7 +564,9 @@ plot!(q_traj[2,:], label="q2", linewidth = 3)
 plot!(q_traj[3,:], label="q3", linewidth = 3)
 plot!(q_traj[4,:], label="q4", linewidth = 3)
 
-#savefig("figures/hw2/attitude_quaternion.png")
+#norm(q_traj[:,600])
+
+#savefig("figures/hw2/attitude_quaternion_updated.png")
 
 #solar normal in the body frame
 solar_normal
@@ -589,7 +596,7 @@ solar_normal_ECI_traj
 
 plot(angle_diff, ylim = [0, 180], label="pointing error", title="Pointing Error", ylabel="Degrees", linewidth=3)
 
-#savefig("figures/hw2/pointing_error.png")
+#savefig("figures/hw2/pointing_error_updated.png")
 #HW 2 section 3 
 function generate_noisy_measurements(std_dev, N_measurements)
 
