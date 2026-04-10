@@ -15,14 +15,14 @@ function orbit_dynamics(x, u)
     v = x[4:6]
 
     #earth gravitational constant [km3/s2]
-    μ = GM_EARTH/(1000^3)
+    μ = SD.GM_EARTH/(1000^3)
     
     #radius of the Earth in km
-    r_earth = R_EARTH/1000
+    r_earth = SD.R_EARTH/1000
 
     a_grav = (-μ/norm(r)^3)*r 
 
-    a_J2 = (-3/2)*((J2_EARTH*μ*r_earth^2)/(norm(r)^5))*
+    a_J2 = (-3/2)*((SD.J2_EARTH*μ*r_earth^2)/(norm(r)^5))*
     [(1-5*(r[3]/norm(r))^2)*r[1]; (1-5*(r[3]/norm(r))^2)*r[2]; (3-5*(r[3]/norm(r))^2)*r[3]]
 
     #total acceleration
@@ -64,14 +64,14 @@ function orbit_attitude_dynamics(x, u)
     q_dot = 0.5*G(q)*ω
 
     #earth gravitational constant [km3/s2]
-    μ = GM_EARTH/(1000^3)
+    μ = SD.GM_EARTH/(1000^3)
     
     #radius of the Earth in km
-    r_earth = R_EARTH/1000
+    r_earth = SD.R_EARTH/1000
 
     a_grav = (-μ/norm(r)^3)*r 
 
-    a_J2 = (-3/2)*((J2_EARTH*μ*r_earth^2)/(norm(r)^5))*
+    a_J2 = (-3/2)*((SD.J2_EARTH*μ*r_earth^2)/(norm(r)^5))*
     [(1-5*(r[3]/norm(r))^2)*r[1]; (1-5*(r[3]/norm(r))^2)*r[2]; (3-5*(r[3]/norm(r))^2)*r[3]]
 
     #total acceleration
@@ -124,5 +124,5 @@ function euler_dynamics_body(x, u)
     x_dot = [ω_dot; ρ_dot]
 
     return x_dot
-    
+
 end
