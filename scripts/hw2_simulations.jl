@@ -2,7 +2,7 @@ using Pkg
 Pkg.activate(".")
 
 using LinearAlgebra 
-using SatelliteDynamics 
+import SatelliteDynamics as SD
 using Plots 
 using Convex
 using Clarabel
@@ -80,13 +80,13 @@ plot!(all_time, ω_traj_2[3,:], label="ωz", linewidth=3)
 
 #Define the orbit initial condition and discretization
 #initial orbit (osculating orbital elements)
-oe0  = [R_EARTH + 550e3, 0.0, 90.0, 0, 0, 0]
+oe0  = [SD.R_EARTH + 550e3, 0.0, 90.0, 0, 0, 0]
 
 #period (based on the semimajor axis)
-T = orbit_period(oe0[1])
+T = SD.orbit_period(oe0[1])
 
 #convert to cartesian (in meters)
-eci0 = sOSCtoCART(oe0, use_degrees=true)
+eci0 = SD.sOSCtoCART(oe0, use_degrees=true)
 
 #scale to km and km/s 
 eci0_km = eci0./1000
@@ -142,6 +142,7 @@ plot(all_time, angle_diff, ylim = [0, 180], label="pointing error", title="Point
 #generate noisy bearing measurements along with the ground truth 
 #and covariance matrices
 
+
 #from the blue canyon 6u cubesat spec sheet 
 pointing_accuracy = 0.002
 N_measurements = 100
@@ -189,6 +190,7 @@ function montecarlo_setup(N_measurements)
     return error_deg_sdp, error_deg_svd
 
 end
+
 
 montecarlo_trials = 50
 sdp_error = zeros(montecarlo_trials)

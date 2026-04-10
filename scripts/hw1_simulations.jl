@@ -2,7 +2,7 @@ using Pkg
 Pkg.activate(".")
 
 using LinearAlgebra 
-using SatelliteDynamics 
+import SatelliteDynamics as SD 
 using Plots 
 using Convex
 using Clarabel
@@ -15,13 +15,13 @@ include("../src/spacecraft_model.jl")
 
 #orbital dynamics simulation 
 #initial orbit (osculating orbital elements)
-oe0  = [R_EARTH + 550e3, 0.0, 90.0, 0, 0, 0]
+oe0  = [SD.R_EARTH + 550e3, 0.0, 90.0, 0, 0, 0]
 
 #period (based on the semimajor axis)
-T = orbit_period(oe0[1])
+T = SD.orbit_period(oe0[1])
 
 #convert to cartesian (in meters)
-eci0 = sOSCtoCART(oe0, use_degrees=true)
+eci0 = SD.sOSCtoCART(oe0, use_degrees=true)
 
 #scale to km and km/s 
 eci0_km = eci0./1000
