@@ -71,14 +71,14 @@ additive sun sensor model
 #over some desired timeframe pass in both the satellite trajectory and sun trajectory at the desired sample rate
 #pass in postion trajectory
 #time trajectory is an array of epochs
-function generate_sun_measurements(satellite_trajectory, sun_trajectory, time_trajectory)
+function generate_sun_measurements(satellite_trajectory, time_trajectory)
 
     N = size(satellite_trajectory)[2]
 
     sun_measurements = zeros(3, N)
 
     for i=1:N
-        sun_position = sun_position(time_trajectory[i])
+        sun_position = SD.sun_position(time_trajectory[i])
 
         sun_measurements[:,i] = (sun_position - satellite_trajectory[:,i])/norm((sun_position - satellite_trajectory[:,i]))
 
@@ -90,7 +90,7 @@ end
 
 function generate_noisy_sun_measurements(attitude_trajectory, ground_truth_measurments)
 
-
+    N = size(attitude_trajectory)[2]
     #misalignment matrix
     M = [1 -1.74e-3 1.74e-3; 1.74e-3 1 -1.74e-3; -1.74e-3 1.74e-3 1] 
     
@@ -105,7 +105,7 @@ function generate_noisy_sun_measurements(attitude_trajectory, ground_truth_measu
     #Q function transforms a quaternion into a rotation matrix
     for i=1:N
         
-        noisy_sun_measurements[:,i] = M*(Q(attitude_trajectory[:,:,i])'*ground_truth_measurments[:,i]) + b + cholesky(W)*randn(3)
+        noisy_sun_measurements[:,i] = M*(Q(attitude_trajectory[:,i])'*ground_truth_measurments[:,i]) + b + sqrt(W)*randn(3)
 
     end
 
@@ -129,26 +129,27 @@ function generate_magnetometer_measurements(time_trajectory, satellite_trajector
     for i = 1:N 
 
         # get decimal date
-        date = caldate(time_trajectory[i])
+        date = SD.caldate(time_trajectory[i])
         year = date[1]
-        day = day_of_year(time_trajectory[i])
+        day = SD.day_of_year(time_trajectory[i])
         decimal_date = year + day / 365.2425
 
         #transform from ECI to ECEF 
-        state_ecef = sECItoECEF(time_trajectory[i], satellite_trajectory[:,i])
+        #make sure the state is in meters
+        state_ecef = SD.sECItoECEF(time_trajectory[i], satellite_trajectory[:,i]*1000)
 
         #transform ECEF to geodetic. output is lon [1], lat [2], altitude [3]
-        state_geodetic = sECEFtoGEOD(state_ecef)
+        state_geodetic = SD.sECEFtoGEOD(state_ecef)
 
         #use ecef state to get the IGRF 14 measurement 
         #the time is a fractional year. 
         #the output is in north-east down coordinate system (checkout toolbox docs for definition)
-        b_measurement_ned = igrfd(decimal_date, state_geodetic[3], state_geodetic[2], state_geodetic[1], Val(:geodetic))
+        b_measurement_ned = igrf(decimal_date, state_geodetic[3], state_geodetic[2], state_geodetic[1], Val(:geodetic))
 
         b_measurement_ecef = ned_to_ecef(b_measurement_ned, state_geodetic[2], state_geodetic[1], state_geodetic[3])
 
         #compute the rotation matrix to convert from ecef to eci 
-        R_eci_ecef = rECEFtoECI(time_trajectory[i])
+        R_eci_ecef = SD.rECEFtoECI(time_trajectory[i])
 
         #ground truth measurements are in the ECI frame
         ground_truth_measurements[:,i] = R_eci_ecef*b_measurement_ecef
@@ -163,9 +164,9 @@ end
 #these are in units of nanoTeslas
 #in the body frame
 #attitude trajectory is in quaternions
-function generate_noisy_magnetometer_measurements(attitude_trajectory, ground_truth_measurments)
+function generate_noisy_magnetometer_measurements(attitude_trajectory, ground_truth_measurements)
 
-    N = size(attitude_trajectory)[1]
+    N = size(attitude_trajectory)[2]
 
     #from spec sheet
 
@@ -184,7 +185,7 @@ function generate_noisy_magnetometer_measurements(attitude_trajectory, ground_tr
     #Q function transforms a quaternion into a rotation matrix
     for i = 1:N 
 
-        noisy_mag_measurements = M*(Q(attitude_trajectory[:,:,i])'*ground_truth_measurments[:,i]) + b + randn(3)*cholesky(W) 
+        noisy_mag_measurements[:,i] = M*(Q(attitude_trajectory[:,i])'*ground_truth_measurements[:,i]) + b + sqrt(W)*randn(3) 
 
     end
 
@@ -211,19 +212,19 @@ function generate_star_tracker_measurement(attitude_trajectory)
 
     N = size(attitude_trajectory)[2]
 
-    star_tracker_measurements = zeros(3*m,N)
+    star_tracker_measurements = zeros(4*m,N)
 
     for i = 1:N 
         
         #sample random axis angle vector
-        ϕ_1 = randn(3)*sqrt(W)
-        ϕ_2 = randn(3)*sqrt(W)
+        ϕ_1 = sqrt(W)*randn(3)
+        ϕ_2 = sqrt(W)*randn(3)
         
         #apply it to the true quaternion
 
         #left multiply true quaternion with delta quaternion
-        star_tracker_measurements[1:3,i] = L(attitude_trajectory[:,i])*expq(ϕ_1)
-        star_tracker_measurements[4:6,i] = L(attitude_trajectory[:,i])*expq(ϕ_2)
+        star_tracker_measurements[1:4,i] = L(attitude_trajectory[:,i])*expq(ϕ_1)
+        star_tracker_measurements[5:8,i] = L(attitude_trajectory[:,i])*expq(ϕ_2)
 
     end 
 
@@ -262,7 +263,7 @@ function generate_gyro_measurements(ω_true, bias_true, dt)
     M = [1 -4.36e-3 4.36e-3; 4.36e-3 1 -4.36e-3; -4.36e-3 4.36e-3 1] 
 
     N = size(ω_true)
-    
+
     gyro_measurements = zeros(3, N)
 
 
