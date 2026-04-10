@@ -57,3 +57,13 @@ function unhat(x)
                 x[1,3]-x[3,1];
                 x[2,1]-x[1,2]]
 end
+
+"""
+quaternion exponential map 
+transform axis-angle to quaterion 
+"""
+
+function expq(ϕ)
+    θ = norm(ϕ)
+    return [cos(θ); ϕ*sinc(θ/π)];
+end
