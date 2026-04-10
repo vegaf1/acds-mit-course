@@ -244,36 +244,55 @@ function generate_gyro_measurements(ω_true, bias_true, dt)
     #convert to (rad/s)
     W = W_hr/(3600^2)
 
-    #this is what is used to simulate the true gyro bias
-    #1 sigma standard deviation for bias 
-    #converted from degrees/sqrt(hr) to radians/sqrt(hr) 
-    b = [0.002268928, 0.002268928, 0.003316126]
-
-    #dt is passed in as an hour already 
-    b_rad_hr = b/sqrt(dt)
-
-    #convert rad/hr into rad/s 
-
-    b_rad_s = b_rad_hr*(1/3600)
-
-    #these are in radians per second
-    W_b = [b_rad_s[1]^2 0 0; 0 b_rad_s[2]^2 0; 0 0 b_rad_s[3]^2]
-
     #misalignment matrix (in radians)
     M = [1 -4.36e-3 4.36e-3; 4.36e-3 1 -4.36e-3; -4.36e-3 4.36e-3 1] 
 
-    N = size(ω_true)
+    N = size(ω_true)[2]
 
     gyro_measurements = zeros(3, N)
 
 
     for i=1:N
 
-        gyro_measurements[:,i] = ω_true[:,i] + bias_true[:,i] + randn(3)*cholesky(W)
+        gyro_measurements[:,i] = M*ω_true[:,i] + bias_true[:,i] + sqrt(W)*randn(3)
 
     end
 
     return gyro_measurements
+
+end
+
+
+"""
+generate the ground truth for the time varying bias
+"""
+function generate_bias(dt, N)
+
+    #this is what is used to simulate the true gyro bias
+    #1 sigma standard deviation for bias 
+    #converted from degrees/sqrt(hr) to radians/sqrt(hr) 
+    b = [0.002268928, 0.002268928, 0.003316126]
+
+    #dt here has to be in hours
+    b_rad_hr = b/sqrt(dt/3600)
+
+    #convert rad/hr into rad/s 
+    b_rad_s = b_rad_hr*(1/3600)
+
+    #these are in radians per second
+    W_b = [b_rad_s[1]^2 0 0; 0 b_rad_s[2]^2 0; 0 0 b_rad_s[3]^2]
+
+    true_bias = zeros(3, N)
+
+    true_bias[:,1] = sqrt(W_b)*randn(3)
+
+    for i=1:N-1
+
+        true_bias[:,i+1] = true_bias[:,i] + sqrt(W_b)*randn(3)
+
+    end
+
+    return true_bias
 
 end
 
