@@ -42,7 +42,7 @@ eci0 = SD.sOSCtoCART(oe0, use_degrees=true)
 eci0_km = eci0./1000
 
 #define the orbit trajectory 
-#state = [position; velocity attitude; angular velocity; rotor momentum]
+#state = [position; velocity; attitude; angular velocity; rotor momentum]
 orbit_traj_combined = zeros(16, N) 
 
 #sampling a random angular velocity with a 1-sigma standard deviation of 0.1 deg/s
@@ -62,6 +62,8 @@ end
 state_trajectory = orbit_traj_combined[1:3, :]
 velocity_trajectory = orbit_traj_combined[4:6,:]
 attitude_trajectory = orbit_traj_combined[7:10,:]
+angular_vel_trajectory = orbit_traj_combined[11:13,:]
+
 #generate measurments (both ground truth inertial and noisy body measurements)
 
 #generate a time trajectory
@@ -73,9 +75,7 @@ for i =2:N
     push!(epochs, epc_1)
 
 end
-
-state_trajectory 
-
+ 
 #generate sun measurements in eci frame
 sun_eci_measurements = generate_sun_measurements(state_trajectory, epochs)
 
@@ -90,6 +90,11 @@ noisy_mag_measurements= generate_noisy_magnetometer_measurements(attitude_trajec
 
 #generate star tracker measurements 
 star_tracker_measurements = generate_star_tracker_measurement(attitude_trajectory)
+
+true_bias = generate_bias(dt, N)
+
+noisy_gyro_measurements = generate_gyro_measurements(angular_vel_trajectory, true_bias, dt)
+
 
 #run MEKF 
 
