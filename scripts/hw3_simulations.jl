@@ -123,33 +123,41 @@ inertial_measurements = [sun_eci_measurements; mag_eci_measurements]
 
 #initialize states and covariances 
 
-#measurement noise. built to be consistent with the noise when generating the measurements
-#W_mekf = BlockDiagonal([Matrix(1.0*I,3,3)*1e-4, Matrix(1.0*I,3,3)*2000, Matrix(1.0*I,3,3)*1e-6, Matrix(1.0*I,3,3)*1e-6])
-
+#working
 #measurement noise  
-W_mekf = BlockDiagonal([Matrix(1.0*I,3,3)*1e-4, Matrix(1.0*I,3,3)*0.0016, Matrix(1.0*I,3,3)*1e-8, Matrix(1.0*I,3,3)*1e-8])
+#W_mekf = BlockDiagonal([Matrix(1.0*I,3,3)*1e-4, Matrix(1.0*I,3,3)*0.0016, Matrix(1.0*I,3,3)*1e-8, Matrix(1.0*I,3,3)*1e-8])
 
 #process noise 
+#V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*1e-6, Matrix(1.0*I, 3,3)*1e-8])
+
+
+#testing 
+W_mekf = BlockDiagonal([Matrix(1.0*I,3,3)*1e-4, Matrix(1.0*I,3,3)*0.0016, Matrix(1.0*I,3,3)*1e-8, Matrix(1.0*I,3,3)*1e-8])
+
+#process noise #working
 V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*1e-6, Matrix(1.0*I, 3,3)*1e-8])
 
-#test 
-#V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*0.01, Matrix(1.0*I, 3,3)*0.01])
-
-#set to larger...
-#V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*0.1, Matrix(1.0*I, 3,3)*0.1])
 
 #initial estimate 
 #add random noise to the ground truth to analyze how far we have to be from 
 #the true solution for the filter to converge
 
+#this works
 #initial delta rotation from the ground truth (make it consistent with V) 
-ϕ0 = sqrt(V_mekf[1:3,1:3])*randn(3)
-
+# ϕ0 = sqrt(V_mekf[1:3,1:3])*randn(3) 
+# #sample a random small rotation and apply it to the ground truth initial state (make it consistent with V)
+# q0 = L(attitude_trajectory[:,1])*expq(ϕ0)
+# #initial bias estimate from the ground truth (make it consistent with V) 
+# b0 = true_bias[:,1]+sqrt(V_mekf[4:6,4:6])*randn(3)
+ 
+#initialize farther
+#1 and 0.001 worked
+ϕ0 = (20*pi/180)*randn(3) 
 #sample a random small rotation and apply it to the ground truth initial state (make it consistent with V)
 q0 = L(attitude_trajectory[:,1])*expq(ϕ0)
-
 #initial bias estimate from the ground truth (make it consistent with V) 
-b0 = true_bias[:,1]+sqrt(V_mekf[4:6,4:6])*randn(3)
+b0 = true_bias[:,1]+(0.01*randn(3))
+
 
 x0 = [q0; b0] 
 
@@ -185,32 +193,92 @@ mekf_state[:,10]
 #represent it as a 3 parameter axis angle
 #check that the filter is consistent using this residual
 
+all_time = range(0, step=dt, length=N) 
+
 #compare the state trajectories 
-plot(mekf_state[1,:], label="estimated") 
-plot!(attitude_trajectory[1,:], label="true")
+plot(all_time, mekf_state[1,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q0 Comparison") 
+plot!(all_time, attitude_trajectory[1,:], label="true")
+#savefig("figures/hw3/q0_comparison.png")
 
-plot(mekf_state[2,:], label="estimated") 
-plot!(attitude_trajectory[2,:], label="true")
+plot(all_time, mekf_state[2,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q1 Comparison") 
+plot!(all_time, attitude_trajectory[2,:], label="true")
+#savefig("figures/hw3/q1_comparison.png")
 
-plot(mekf_state[3,:], label="estimated") 
-plot!(attitude_trajectory[3,:], label="true")
+plot(all_time, mekf_state[3,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q2 Comparison") 
+plot!(all_time, attitude_trajectory[3,:], label="true")
+#savefig("figures/hw3/q2comparison.png")
 
-plot(mekf_state[4,:], label="estimated") 
-plot!(attitude_trajectory[4,:], label="true")
+plot(all_time, mekf_state[4,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q3 Comparison") 
+plot!(all_time, attitude_trajectory[4,:], label="true")
+#savefig("figures/hw3/q3_comparison.png")
 
-plot(mekf_state[5,:], label="estimated") 
-plot!(true_bias[1,:], label="true") 
+plot(all_time, mekf_state[5,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias x Comparison") 
+plot!(all_time, true_bias[1,:], label="true") 
+#savefig("figures/hw3/beta_x_comparison.png")
 
-plot(mekf_state[6,:], label="estimated") 
-plot!(true_bias[2,:], label="true") 
+plot(all_time, mekf_state[6,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias y Comparison")
+plot!(all_time, true_bias[2,:], label="true") 
+#savefig("figures/hw3/beta_y_comparison.png")
 
-plot(mekf_state[7,:], label="estimated") 
-
-plot!(true_bias[3,:], label="true") 
-
-
-
-mekf_P
-
+plot(all_time, mekf_state[7,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias z Comparison") 
+plot!(all_time, true_bias[3,:], label="true") 
+#savefig("figures/hw3/beta_z_comparison.png")
 
 
+standard_dev = zeros(6, N)
+
+for i = 1:N 
+
+    #calculate the 3 sigma bound from the filter
+    standard_dev[:,i] = 3*sqrt.(diag(mekf_P[:,:,i]))
+
+end
+
+
+rotation_residual = zeros(3,N)
+bias_residaul = zeros(3,N)
+
+bias_residual = mekf_state[5:7,:] - true_bias
+
+for i =1:N
+
+    rotation_residual[:,i] = H'*L(attitude_trajectory[:,i])'*mekf_state[1:4,i]
+
+end
+
+size(all_time)  
+#plot the rotation residual (3 axis parameter) vs the 3 sigma bounds 
+plot(all_time[10:end], rotation_residual[1,10:end], label="rotation x residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="x-rotation residuals")
+plot!(all_time[10:end], standard_dev[1,10:end], label="3σ upper bound")
+plot!(all_time[10:end], -standard_dev[1,10:end], label="3σ lower bound")
+#savefig("figures/hw3/Rx_consistency.png")
+
+standard_dev 
+
+plot(all_time[10:end], rotation_residual[2,:], label="rotation y residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="y-rotation residuals")
+plot!(all_time[10:end], standard_dev[2,:], label="3σ upper bound")
+plot!(all_time[10:end], -standard_dev[2,:], label="3σ lower bound")
+#savefig("figures/hw3/Ry_consistency.png")
+
+plot(all_time[10:end], rotation_residual[3,:], label="rotation z residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="z-rotation residuals")
+plot!(all_time[10:end], standard_dev[3,:], label="3σ upper bound")
+plot!(all_time[10:end], -standard_dev[3,:], label="3σ lower bound")
+#savefig("figures/hw3/Rz_consistency.png")
+
+#plot the residuals of bias with the 3-sigma bounds to check consistency 
+plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias x residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias x residuals")
+plot!(all_time[10:end], standard_dev[4,10:end], label="3σ upper bound")
+plot!(all_time[10:end], -standard_dev[4,10:end], label="3σ lower bound")
+#savefig("figures/hw3/gyro_x_consistency.png")
+
+plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias y residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias y residuals")
+plot!(all_time[10:end], standard_dev[5,10:end], label="3σ upper bound")
+plot!(all_time[10:end], -standard_dev[5,10:end], label="3σ lower bound")
+#savefig("figures/hw3/gyro_y_consistency.png")
+
+plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias z residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias z residuals")
+plot!(all_time[10:end], standard_dev[6,10:end], label="3σ upper bound")
+plot!(all_time[10:end], -standard_dev[6,10:end], label="3σ lower bound")
+#savefig("figures/hw3/gyro_z_consistency.png")
+
+ 
