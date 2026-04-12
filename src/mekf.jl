@@ -225,14 +225,14 @@ function mekf_step(xk, uk, Pk, ybk1, yik1, dt, V, W, sun_sensor_specs, mag_senso
 
     #K = P_prediction*C'*inv(S) 
 
-    println("this is the kalman gain: ", K)
+    #println("this is the kalman gain: ", K)
 
     #Update
     #delta state is only size 6 
     #since there is a negative here, the innovation on the vector measurements needs to be flipped 
     delta_x= -K*z
 
-    println("delta x: ", delta_x)
+    #println("delta x: ", delta_x)
 
     Δϕ = delta_x[1:3] 
     Δβ= delta_x[4:6] 
