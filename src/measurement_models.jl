@@ -88,6 +88,7 @@ function generate_sun_measurements(satellite_trajectory, time_trajectory)
 end
 
 
+#return noisy sun measurements and sensor error characteristics
 function generate_noisy_sun_measurements(attitude_trajectory, ground_truth_measurments)
 
     N = size(attitude_trajectory)[2]
@@ -109,7 +110,7 @@ function generate_noisy_sun_measurements(attitude_trajectory, ground_truth_measu
 
     end
 
-    return noisy_sun_measurements
+    return noisy_sun_measurements, [M,b]
 
 end
 
@@ -154,6 +155,9 @@ function generate_magnetometer_measurements(time_trajectory, satellite_trajector
         #ground truth measurements are in the ECI frame
         ground_truth_measurements[:,i] = R_eci_ecef*b_measurement_ecef
 
+        #normalize magnetometer measurements 
+        #ground_truth_measurements[:,i] = ground_truth_measurements[:,i]/norm(ground_truth_measurements[:,i])
+
     end
 
     return ground_truth_measurements
@@ -164,6 +168,8 @@ end
 #these are in units of nanoTeslas
 #in the body frame
 #attitude trajectory is in quaternions
+#return the noisy magnetometer measurements and the sensor error characteristics 
+#dividing by 1000 to make the numerics better
 function generate_noisy_magnetometer_measurements(attitude_trajectory, ground_truth_measurements)
 
     N = size(attitude_trajectory)[2]
@@ -174,10 +180,14 @@ function generate_noisy_magnetometer_measurements(attitude_trajectory, ground_tr
     M = [1 -1.74e-2 1.74e-2; 1.74e-2 1 -1.74e-2; -1.74e-2 1.74e-2 1] 
     
     #constant bias    
-    b = ones(3)*100
+    b = (ones(3)*100)/1000
 
     #covariance matrix for the noise
-    W = Matrix(1.0*I,3,3)*1600
+    W = Matrix(1.0*I,3,3)*(40/1000)^2
+
+    #b = ones(3)*(0.002)
+
+    #W = Matrix(1.0*I,3,3)*(0.004^2)
 
     #these are in the body frame
     noisy_mag_measurements = zeros(3, N)
@@ -189,7 +199,7 @@ function generate_noisy_magnetometer_measurements(attitude_trajectory, ground_tr
 
     end
 
-    return noisy_mag_measurements
+    return noisy_mag_measurements, [M, b]
 
 end
 
@@ -292,7 +302,8 @@ function generate_bias(dt, N)
 
     end
 
+    #print("this is Wb", W_b)
+
     return true_bias
 
 end
-

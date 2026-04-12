@@ -5,6 +5,10 @@
 """
 H = [zeros(1,3); I];
 
+"""
+Used to define the quaternion conjugate 
+q^T = Tq 
+"""
 T = [1  zeros(1,3);
      zeros(3,1) -I];
 
