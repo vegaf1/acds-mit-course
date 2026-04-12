@@ -238,7 +238,7 @@ function generate_star_tracker_measurement(attitude_trajectory)
 
     end 
 
-    return star_tracker_measurements
+    return star_tracker_measurements, W
 
 end
 
@@ -268,7 +268,7 @@ function generate_gyro_measurements(ω_true, bias_true, dt)
 
     end
 
-    return gyro_measurements
+    return gyro_measurements, M
 
 end
 
