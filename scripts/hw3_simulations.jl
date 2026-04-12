@@ -105,13 +105,14 @@ plot(noisy_mag_measurements[2,:])
 
 plot(noisy_mag_measurements[3,:])
 #generate star tracker measurements 
-star_tracker_measurements = generate_star_tracker_measurement(attitude_trajectory)
+#save the measurement error used when making the measurements
+star_tracker_measurements, W_st = generate_star_tracker_measurement(attitude_trajectory)
 
 #simulate a random walk for the gyro bias 
 true_bias = generate_bias(dt, N)
 
 #simulate gryo measurements 
-noisy_gyro_measurements = generate_gyro_measurements(angular_vel_trajectory, true_bias, dt)
+noisy_gyro_measurements, M_gyro = generate_gyro_measurements(angular_vel_trajectory, true_bias, dt)
 
 #concatenate all the measurements 
 noisy_body_measurements = [noisy_sun_measurements; noisy_mag_measurements; star_tracker_measurements]
@@ -130,12 +131,19 @@ inertial_measurements = [sun_eci_measurements; mag_eci_measurements]
 #process noise 
 #V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*1e-6, Matrix(1.0*I, 3,3)*1e-8])
 
-
-#testing 
-W_mekf = BlockDiagonal([Matrix(1.0*I,3,3)*1e-4, Matrix(1.0*I,3,3)*0.0016, Matrix(1.0*I,3,3)*1e-8, Matrix(1.0*I,3,3)*1e-8])
-
+############
+#testing (this works) 
+#W_mekf = BlockDiagonal([Matrix(1.0*I,3,3)*1e-4, Matrix(1.0*I,3,3)*0.0016, Matrix(1.0*I,3,3)*1e-8, Matrix(1.0*I,3,3)*1e-8])
 #process noise #working
-V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*1e-6, Matrix(1.0*I, 3,3)*1e-8])
+#V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*1e-6, Matrix(1.0*I, 3,3)*1e-8])
+###########3
+
+#using the actual star tracker measurement noise 
+W_mekf = BlockDiagonal([Matrix(1.0*I,3,3)*7.61e-5, Matrix(1.0*I,3,3)*0.0016, W_st, W_st])
+
+
+V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*1e-6, Matrix(1.0*I, 3,3)*2.58e-8])
+
 
 
 #initial estimate 
@@ -156,13 +164,14 @@ V_mekf = BlockDiagonal([Matrix(1.0*I, 3,3)*1e-6, Matrix(1.0*I, 3,3)*1e-8])
 #sample a random small rotation and apply it to the ground truth initial state (make it consistent with V)
 q0 = L(attitude_trajectory[:,1])*expq(ϕ0)
 #initial bias estimate from the ground truth (make it consistent with V) 
-b0 = true_bias[:,1]+(0.01*randn(3))
+b0 = true_bias[:,1]+(1e-5*randn(3))
 
-
+true_bias 
 x0 = [q0; b0] 
 
 #initial covariance
-P0 = Matrix(1.0*I, 6,6).*[ones(3)*1e-3; ones(3)*1e-4]
+#this should correspond to the initial deviation 
+P0 = Matrix(1.0*I, 6,6).*[abs.(ϕ0); ones(3)*1e-5]
 
 mekf_state = zeros(nx, N)
 mekf_P = zeros(6,6, N)
@@ -180,13 +189,10 @@ for k=1:N-1
 
     mekf_state[:,k+1], mekf_P[:,:,k+1], innovations[:,k] = mekf_step(mekf_state[:,k], noisy_gyro_measurements[:,k], mekf_P[:,:,k], 
                                                     noisy_body_measurements[:,k+1], inertial_measurements[:,k+1],
-                                                    dt, V_mekf, W_mekf, sun_sensor_specs, mag_sensor_specs)
+                                                    dt, V_mekf, W_mekf, sun_sensor_specs, mag_sensor_specs, M_gyro)
 
 end
 
-true_bias  
-mekf_state 
-mekf_state[:,10] 
 #analysis
 
 #take the difference between the estimated quaternion and the ground truth 
@@ -196,44 +202,44 @@ mekf_state[:,10]
 all_time = range(0, step=dt, length=N) 
 
 #compare the state trajectories 
-plot(all_time, mekf_state[1,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q0 Comparison") 
-plot!(all_time, attitude_trajectory[1,:], label="true")
-#savefig("figures/hw3/q0_comparison.png")
+plot(all_time, mekf_state[1,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q0 Comparison", linewidth=3) 
+plot!(all_time, attitude_trajectory[1,:], label="true", linewidth=3)
+savefig("figures/hw3/q0_comparison.png")
 
-plot(all_time, mekf_state[2,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q1 Comparison") 
-plot!(all_time, attitude_trajectory[2,:], label="true")
-#savefig("figures/hw3/q1_comparison.png")
+plot(all_time, mekf_state[2,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q1 Comparison", linewidth=3) 
+plot!(all_time, attitude_trajectory[2,:], label="true", linewidth=3)
+savefig("figures/hw3/q1_comparison.png")
 
-plot(all_time, mekf_state[3,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q2 Comparison") 
-plot!(all_time, attitude_trajectory[3,:], label="true")
-#savefig("figures/hw3/q2comparison.png")
+plot(all_time, mekf_state[3,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q2 Comparison", linewidth=3) 
+plot!(all_time, attitude_trajectory[3,:], label="true", linewidth=3)
+savefig("figures/hw3/q2comparison.png")
 
-plot(all_time, mekf_state[4,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q3 Comparison") 
-plot!(all_time, attitude_trajectory[4,:], label="true")
-#savefig("figures/hw3/q3_comparison.png")
+plot(all_time, mekf_state[4,:], label="estimated", xlabel="Time (s)", ylabel="Quaternion Component Value", title= "q3 Comparison", linewidth=3) 
+plot!(all_time, attitude_trajectory[4,:], label="true", linewidth=3)
+savefig("figures/hw3/q3_comparison.png")
 
-plot(all_time, mekf_state[5,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias x Comparison") 
-plot!(all_time, true_bias[1,:], label="true") 
-#savefig("figures/hw3/beta_x_comparison.png")
+plot(all_time, mekf_state[5,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias x Comparison", linewidth=3) 
+plot!(all_time, true_bias[1,:], label="true", linewidth=3) 
+savefig("figures/hw3/beta_x_comparison.png")
 
-plot(all_time, mekf_state[6,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias y Comparison")
-plot!(all_time, true_bias[2,:], label="true") 
-#savefig("figures/hw3/beta_y_comparison.png")
+plot(all_time, mekf_state[6,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias y Comparison", linewidth=3)
+plot!(all_time, true_bias[2,:], label="true", linewidth=3) 
+savefig("figures/hw3/beta_y_comparison.png")
 
-plot(all_time, mekf_state[7,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias z Comparison") 
-plot!(all_time, true_bias[3,:], label="true") 
-#savefig("figures/hw3/beta_z_comparison.png")
+plot(all_time, mekf_state[7,:], label="estimated", xlabel="Time (s)", ylabel="Bias Value", title= "Gyro bias z Comparison", linewidth=3) 
+plot!(all_time, true_bias[3,:], label="true", linewidth=3) 
+savefig("figures/hw3/beta_z_comparison.png")
 
 
 standard_dev = zeros(6, N)
 
+mekf_P  
 for i = 1:N 
 
     #calculate the 3 sigma bound from the filter
     standard_dev[:,i] = 3*sqrt.(diag(mekf_P[:,:,i]))
 
 end
-
 
 rotation_residual = zeros(3,N)
 bias_residaul = zeros(3,N)
@@ -248,37 +254,37 @@ end
 
 size(all_time)  
 #plot the rotation residual (3 axis parameter) vs the 3 sigma bounds 
-plot(all_time[10:end], rotation_residual[1,10:end], label="rotation x residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="x-rotation residuals")
-plot!(all_time[10:end], standard_dev[1,10:end], label="3σ upper bound")
-plot!(all_time[10:end], -standard_dev[1,10:end], label="3σ lower bound")
-#savefig("figures/hw3/Rx_consistency.png")
+plot(all_time[10:end], rotation_residual[1,10:end], label="rotation x residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="x-rotation residuals", linewidth=3)
+plot!(all_time[10:end], standard_dev[1,10:end], label="3σ upper bound", linewidth=3)
+plot!(all_time[10:end], -standard_dev[1,10:end], label="3σ lower bound", linewidth=3)
+savefig("figures/hw3/Rx_consistency.png")
 
-standard_dev 
+plot(all_time[10:end], rotation_residual[2,10:end], label="rotation y residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="y-rotation residuals", linewidth=3)
+plot!(all_time[10:end], standard_dev[2,10:end], label="3σ upper bound", linewidth=3)
+plot!(all_time[10:end], -standard_dev[2,10:end], label="3σ lower bound", linewidth=3)
+savefig("figures/hw3/Ry_consistency.png")
 
-plot(all_time[10:end], rotation_residual[2,:], label="rotation y residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="y-rotation residuals")
-plot!(all_time[10:end], standard_dev[2,:], label="3σ upper bound")
-plot!(all_time[10:end], -standard_dev[2,:], label="3σ lower bound")
-#savefig("figures/hw3/Ry_consistency.png")
-
-plot(all_time[10:end], rotation_residual[3,:], label="rotation z residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="z-rotation residuals")
-plot!(all_time[10:end], standard_dev[3,:], label="3σ upper bound")
-plot!(all_time[10:end], -standard_dev[3,:], label="3σ lower bound")
-#savefig("figures/hw3/Rz_consistency.png")
+plot(all_time[10:end], rotation_residual[3,10:end], label="rotation z residual", xlabel="Time (s)", ylabel = "Delta Rotation (rad)", title="z-rotation residuals", linewidth=3)
+plot!(all_time[10:end], standard_dev[3,10:end], label="3σ upper bound", linewidth=3)
+plot!(all_time[10:end], -standard_dev[3,10:end], label="3σ lower bound", linewidth=3)
+savefig("figures/hw3/Rz_consistency.png")
 
 #plot the residuals of bias with the 3-sigma bounds to check consistency 
-plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias x residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias x residuals")
-plot!(all_time[10:end], standard_dev[4,10:end], label="3σ upper bound")
-plot!(all_time[10:end], -standard_dev[4,10:end], label="3σ lower bound")
-#savefig("figures/hw3/gyro_x_consistency.png")
+plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias x residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias x residuals", linewidth=3)
+plot!(all_time[10:end], standard_dev[4,10:end], label="3σ upper bound", linewidth=3)
+plot!(all_time[10:end], -standard_dev[4,10:end], label="3σ lower bound", linewidth=3)
+savefig("figures/hw3/gyro_x_consistency.png")
 
-plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias y residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias y residuals")
-plot!(all_time[10:end], standard_dev[5,10:end], label="3σ upper bound")
-plot!(all_time[10:end], -standard_dev[5,10:end], label="3σ lower bound")
-#savefig("figures/hw3/gyro_y_consistency.png")
+plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias y residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias y residuals", linewidth=3)
+plot!(all_time[10:end], standard_dev[5,10:end], label="3σ upper bound", linewidth=3)
+plot!(all_time[10:end], -standard_dev[5,10:end], label="3σ lower bound", linewidth=3)
+savefig("figures/hw3/gyro_y_consistency.png")
 
-plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias z residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias z residuals")
-plot!(all_time[10:end], standard_dev[6,10:end], label="3σ upper bound")
-plot!(all_time[10:end], -standard_dev[6,10:end], label="3σ lower bound")
-#savefig("figures/hw3/gyro_z_consistency.png")
+plot(all_time[10:end], bias_residual[1,10:end], label="gyro bias z residual", xlabel="Time (s)", ylabel = "Gyro Bias Residual (rad)", title="Gyro Bias z residuals", linewidth=3)
+plot!(all_time[10:end], standard_dev[6,10:end], label="3σ upper bound", linewidth=3)
+plot!(all_time[10:end], -standard_dev[6,10:end], label="3σ lower bound", linewidth=3)
+savefig("figures/hw3/gyro_z_consistency.png")
 
- 
+rotation_residual 
+
+bias_residual 
