@@ -3,9 +3,10 @@
 
 """
 quaternion forward propagation assuming 
-constant angular velocity between timestep 
+constant angular velocity between timestep
+need to solve for ω_true based off the sensor model  
 """
-function state_prediction(x, u, dt)
+function state_prediction(x, u, dt, M_gyro)
 
     #quaternion
     q = x[1:4]
@@ -17,7 +18,7 @@ function state_prediction(x, u, dt)
     ω = u 
 
     #delta quaternion
-    Δq = expq(0.5*dt*(ω - β))
+    Δq = expq(0.5*dt*(M_gyro\(ω - β)))
 
     #apply delta quaternion to current state
     q1 = L(q)*Δq
@@ -205,10 +206,10 @@ Input: xk - state at timestep k
        sun_sensor_specs - sun sensor misalignment matrix and bias 
        mag_sensor_specs - mag sensor misalignment matrix and bias 
 """
-function mekf_step(xk, uk, Pk, ybk1, yik1, dt, V, W, sun_sensor_specs, mag_sensor_specs)
+function mekf_step(xk, uk, Pk, ybk1, yik1, dt, V, W, sun_sensor_specs, mag_sensor_specs, M_gyro)
 
     #Prediction step 
-    x_prediction = state_prediction(xk, uk, dt)
+    x_prediction = state_prediction(xk, uk, dt, M_gyro)
     A = state_prediction_deriv(xk, uk, dt)
     P_prediction = A*Pk*A' + V
 
@@ -237,8 +238,9 @@ function mekf_step(xk, uk, Pk, ybk1, yik1, dt, V, W, sun_sensor_specs, mag_senso
     Δϕ = delta_x[1:3] 
     Δβ= delta_x[4:6] 
     
-    #transform Δϕ to Δq
-    Δq = [sqrt(1 - Δϕ'*Δϕ); Δϕ]
+    #transform Δϕ to Δq using exponential map 
+    #Δq = [sqrt(1 - Δϕ'*Δϕ); Δϕ]
+    Δq = expq(Δϕ)
 
     #corrected state 
     xk1 = zeros(size(xk))
