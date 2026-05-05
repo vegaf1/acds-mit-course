@@ -98,10 +98,11 @@ mag_eci_measurements = generate_magnetometer_measurements(epochs, state_trajecto
 #generate noisy magnetometer measurements in the body frame 
 noisy_mag_measurements, mag_sensor_specs= generate_noisy_magnetometer_measurements(attitude_trajectory, mag_eci_measurements)
 
-plot(noisy_mag_measurements[1,:])
 
-plot(noisy_mag_measurements[2,:])
+#plot(noisy_sun_measurements[1,:])
+#plot(sun_eci_measurements[2,:])
 
+epochs 
 
 plot(noisy_mag_measurements[3,:])
 #generate star tracker measurements 
@@ -114,6 +115,8 @@ true_bias = generate_bias(dt, N)
 #simulate gryo measurements 
 noisy_gyro_measurements, M_gyro = generate_gyro_measurements(angular_vel_trajectory, true_bias, dt)
 
+plot(noisy_gyro_measurements[3,:])
+
 #concatenate all the measurements 
 noisy_body_measurements = [noisy_sun_measurements; noisy_mag_measurements; star_tracker_measurements]
 
@@ -121,6 +124,8 @@ noisy_body_measurements = [noisy_sun_measurements; noisy_mag_measurements; star_
 inertial_measurements = [sun_eci_measurements; mag_eci_measurements]
 
 #run MEKF 
+
+plot(noisy_gyro_measurements[3,:])
 
 #initialize states and covariances 
 
@@ -232,7 +237,7 @@ plot(all_time, mekf_state[7,:], label="estimated", xlabel="Time (s)", ylabel="Bi
 plot!(all_time, true_bias[3,:], label="true", linewidth=3) 
 #savefig("figures/hw3/beta_z_comparison.png")
 
-
+mekf_P 
 standard_dev = zeros(6, N)
 
 mekf_P  
