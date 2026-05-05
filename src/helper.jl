@@ -71,3 +71,36 @@ function expq(ϕ)
     θ = norm(ϕ)
     return [cos(θ); ϕ*sinc(θ/π)];
 end
+
+"""
+quaternion log
+transform quaternion to axis angle 
+"""
+function logq(q)
+    θ = acos(q[1])
+    r = q[2:4]/norm(q[2:4])
+    return θ*r
+end
+
+
+"""
+Cayley Map 
+Rodrigues paramter to quaternion
+"""
+function cayley_map(ϕ)
+
+    q = 1/(sqrt(1 + norm(ϕ)^2))*[1;ϕ]
+
+    return q
+end
+
+"""
+Inverse Cayley Map 
+quaternion to Rodrigues parameter
+"""
+function inverse_cayley_map(q)
+
+    ϕ = q[2:4]/q[1]
+
+    return ϕ
+end

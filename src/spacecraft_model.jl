@@ -92,4 +92,84 @@ end
 J_b_SI_perturbed = perturb_inertia(J_b_SI) 
 
 
+function actuator_jacobians()
+
+    #positions of the thrusters r (in cm)
+    r1 = [10, 5, -17]
+    r2 =  [-10,5, -17]
+    r3 =  [10, -5, -17]
+    r4 =  [-10, -5, -17]
+
+    a1 = [0, -sind(20), -cosd(20)]
+    a2 = [0, -sind(20), -cosd(20)]
+    a3 = [0, sind(20), -cosd(20)]
+    a4 = [0, sind(20), -cosd(20)]
+
+    #divided by 100 to get into meters
+    #thruster jacobian
+    Bt = [cross(r1/100, a1) cross(r2/100, a2) cross(r3/100, a3) cross(r4/100, a4)]
+
+    #we assume that the wheels are along the body axis. Therefore the wheel jacobian is identity matrix
+    Bw = Matrix(1.0*I,3,3)
+
+    return Bt, Bw
+
+end
 #may be useful to define a struct for the terms that are used the most...
+
+# Face geometry: centroids [m], outward normals, and areas [m²] in the body frame
+# CoM is at the body frame origin, so centroids are the moment arms directly.
+# 6 bus faces + 5 solar panel 1 faces + 5 solar panel 2 faces = 16 total
+
+const face_centroids = [
+    # Bus
+    [0.0,    0.05,  0.0 ],
+    [0.0,   -0.05,  0.0 ],
+    [0.10,   0.0,   0.0 ],
+    [-0.10,  0.0,   0.0 ],
+    [0.0,    0.0,   0.17],
+    [0.0,    0.0,  -0.17],
+    # Solar Panel 1
+    [0.3536,  0.3536,  0.0 ],
+    [0.3536,  0.3536,  0.0 ],
+    [0.3536,  0.3536,  0.17],
+    [0.3536,  0.3536, -0.17],
+    [0.7071,  0.7071,  0.0 ],
+    # Solar Panel 2
+    [-0.3536, -0.3536,  0.0 ],
+    [-0.3536, -0.3536,  0.0 ],
+    [-0.3536, -0.3536,  0.17],
+    [-0.3536, -0.3536, -0.17],
+    [-0.7071, -0.7071,  0.0 ],
+]
+
+const face_normals = [
+    # Bus
+    [0.0,  1.0,  0.0],
+    [0.0, -1.0,  0.0],
+    [1.0,  0.0,  0.0],
+    [-1.0, 0.0,  0.0],
+    [0.0,  0.0,  1.0],
+    [0.0,  0.0, -1.0],
+    # Solar Panel 1
+    [-sqrt(2)/2,  sqrt(2)/2, 0.0],
+    [ sqrt(2)/2, -sqrt(2)/2, 0.0],
+    [0.0,  0.0,  1.0],
+    [0.0,  0.0, -1.0],
+    [ sqrt(2)/2,  sqrt(2)/2, 0.0],
+    # Solar Panel 2
+    [-sqrt(2)/2,  sqrt(2)/2, 0.0],
+    [ sqrt(2)/2, -sqrt(2)/2, 0.0],
+    [0.0,  0.0,  1.0],
+    [0.0,  0.0, -1.0],
+    [-sqrt(2)/2, -sqrt(2)/2, 0.0],
+]
+
+const face_areas = [
+    # Bus [m²]
+    0.0680, 0.0680, 0.0340, 0.0340, 0.0200, 0.0200,
+    # Solar Panel 1 [m²]
+    0.2924, 0.2924, 0.0086, 0.0086, 0.0086,
+    # Solar Panel 2 [m²]
+    0.2924, 0.2924, 0.0086, 0.0086, 0.0086,
+]

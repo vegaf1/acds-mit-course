@@ -275,6 +275,7 @@ end
 
 """
 generate the ground truth for the time varying bias
+generates a trajectory
 """
 function generate_bias(dt, N)
 
@@ -305,5 +306,28 @@ function generate_bias(dt, N)
     #print("this is Wb", W_b)
 
     return true_bias
+
+end
+
+
+function generate_bias_value(dt, N, true_bias_prev)
+
+    #this is what is used to simulate the true gyro bias
+    #1 sigma standard deviation for bias 
+    #converted from degrees/sqrt(hr) to radians/sqrt(hr) 
+    b = [0.002268928, 0.002268928, 0.003316126]
+
+    #dt here has to be in hours
+    b_rad_hr = b/sqrt(dt/3600)
+
+    #convert rad/hr into rad/s 
+    b_rad_s = b_rad_hr*(1/3600)
+
+    #these are in radians per second
+    W_b = [b_rad_s[1]^2 0 0; 0 b_rad_s[2]^2 0; 0 0 b_rad_s[3]^2]
+
+    true_bias_next = true_bias_prev + sqrt(W_b)*randn(3)
+
+    return true_bias_next
 
 end

@@ -18,7 +18,9 @@ function state_prediction(x, u, dt, M_gyro)
     ω = u 
 
     #delta quaternion
-    Δq = expq(0.5*dt*(M_gyro\(ω - β)))
+    #cannot cancel out M_gyro
+    #Δq = expq(0.5*dt*(M_gyro\(ω - β)))
+    Δq = expq(0.5*dt*((ω - β)))
 
     #apply delta quaternion to current state
     q1 = L(q)*Δq
@@ -240,7 +242,12 @@ function mekf_step(xk, uk, Pk, ybk1, yik1, dt, V, W, sun_sensor_specs, mag_senso
     
     #transform Δϕ to Δq using exponential map 
     #Δq = [sqrt(1 - Δϕ'*Δϕ); Δϕ]
-    Δq = expq(Δϕ)
+
+    #this should be divided by 2 (based on how expq is defined)
+    #Δq = expq(Δϕ)
+
+    #trying out
+    Δq = expq(Δϕ/2)
 
     #corrected state 
     xk1 = zeros(size(xk))
@@ -258,6 +265,50 @@ function mekf_step(xk, uk, Pk, ybk1, yik1, dt, V, W, sun_sensor_specs, mag_senso
 
     Pk1 = (Matrix(1.0*I, 6,6) - K*C)*P_prediction*(Matrix(1.0*I, 6,6) - K*C)' + K*W*K'
 
-    return xk1, Pk1, z
+    return xk1, Pk1, z, K
 
 end
+
+
+
+"""
+get a set of inertial measurements and noisy body measurements at a ground truth state/time
+for use in the mekf sim for the controller
+"""
+function get_measurement(xk, epoch, prev_bias)
+
+    #ground truth position simulated from the control
+    pose = xk[1:6]
+    qk= xk[7:10]
+    ωk = xk[11:13]
+
+    #generate sun measurement in eci frame
+    sun_eci_measurement = generate_sun_measurements(reshape(pose[1:3],3,1), epoch)
+
+    #generate noisy sun measurement in body frame
+    noisy_sun_measurement, sun_sensor_specs = generate_noisy_sun_measurements(reshape(qk,4,1), sun_eci_measurement)
+
+    #generate the magnetometer measurements in the eci frame
+    #convert from nT to microtesla
+    mag_eci_measurement = generate_magnetometer_measurements(epoch, reshape(pose[1:3],3,1))/1000
+
+    #generate noisy magnetometer measurements in the body frame
+    noisy_mag_measurement, mag_sensor_specs= generate_noisy_magnetometer_measurements(reshape(qk,4,1), mag_eci_measurement)
+
+    star_tracker_measurement, W_st = generate_star_tracker_measurement(reshape(qk,4,1))
+
+    #model bias as a random walk
+    true_bias_k = generate_bias_value(dt_orbit, 1, prev_bias)
+
+    noisy_gyro_measurement, M = generate_gyro_measurements(reshape(ωk,3,1), reshape(true_bias_k,3,1), dt_orbit)
+
+    #concatenate all the measurements
+    noisy_body_measurements = [noisy_sun_measurement; noisy_mag_measurement; star_tracker_measurement]
+
+    #ground truth inertial measurements
+    inertial_measurements = [sun_eci_measurement; mag_eci_measurement]
+
+    return noisy_body_measurements, inertial_measurements, noisy_gyro_measurement[:,1], sun_sensor_specs, mag_sensor_specs, M, W_st, true_bias_k
+
+end
+
