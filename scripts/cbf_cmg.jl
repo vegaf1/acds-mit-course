@@ -3,7 +3,7 @@ Pkg.activate(".")
 
 using LinearAlgebra
 using Plots
-using MeshCat, GeometryBasics, CoordinateTransformations, Rotations
+#using MeshCat, GeometryBasics, CoordinateTransformations, Rotations
 using Convex, MosekTools
 using ForwardDiff
 
@@ -110,7 +110,7 @@ end
 function steering(x,τ)
     B = Bw(x)
     #regularized steering law
-    u = B'*((B*B'+1e-2*I)\τ)
+    u = B'*((B*B'+1e-3*I)\τ)
 end
 
 
@@ -157,28 +157,47 @@ end
 
 #initial condition that leads to a singularity that pseudo inverse can't get out of...
 #example from the project
-x0=[0.9042701822532846;
-  0.39813596313876826;
-  0.06317142271220837;
- -0.14068604655648087;
-  0.005448462332399245;
-  0.0038118416965444903;
- -0.011059114154415316;
-  0.0;
- -0.9691739653926361;
-  0.24637740319500392;
-  0.0;
- -0.20432132079551232;
-  0.9789038757040333;
-  0.5979512060040267;
-  0.0;
- -0.801532504168315;
-  0.5639729249640095;
-  0.0;
-  0.8257932791610377]
+# x0=[0.9042701822532846;
+#   0.39813596313876826;
+#   0.06317142271220837;
+#  -0.14068604655648087;
+#   0.005448462332399245;
+#   0.0038118416965444903;
+#  -0.011059114154415316;
+#   0.0;
+#  -0.9691739653926361;
+#   0.24637740319500392;
+#   0.0;
+#  -0.20432132079551232;
+#   0.9789038757040333;
+#   0.5979512060040267;
+#   0.0;
+#  -0.801532504168315;
+#   0.5639729249640095;
+#   0.0;
+#   0.8257932791610377]
 
 
-x0 
+#alternate initial condition
+x0 = [0.847226561031405;
+  0.0732446800051401;
+  0.5258364795266754;
+  0.018394780043152908;
+ -0.002807278981679324;
+  0.020918484382436424;
+ -0.00798171207723605;
+  0.0;
+  0.13174195145061054;
+  0.9912840451797784;
+  0.0;
+  0.9661136333509235;
+  0.2581171196443148;
+  0.1061036485387192;
+  0.0;
+ -0.9943550752959286;
+  0.8187169663533636;
+  0.0;
+ -0.5741972910116743];
 
 #Simulate n time steps
 xhist = zeros(19,n)
@@ -244,6 +263,7 @@ while enforcing the CBF safety constraint:
     subject to  cᵀu + α h(x) ≥ 0          (CBF forward-invariance)
 """
 
+nullspace(Bw(x0))
 
 function steering_cbf_qp(x, τ; ε=0.05, α=1.0)
     
@@ -427,8 +447,6 @@ end
 
 nb = nullspace(Bw(x0)) 
 
-Bw(x0)*nb 
-
 # -----------------------------------------------------------------------------
 #  Simulation + Plots
 #
@@ -583,7 +601,7 @@ r = run_comparison()
 
 plot_results(r)
 
-#savefig("cmg_results_test2.png")
+#savefig("cmg_results_test3.png")
 
 
 # plot(r.t, r.δu_null_norm, label="null-space correction")
