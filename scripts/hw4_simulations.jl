@@ -398,7 +398,6 @@ end
 #rmse calculation for regulator
 rmse = sqrt(rmse_num/size(converged_trajectory)[1])
 
-
 plot(q_controlled[1,1:2000])
 plot!(mekf_state[1,1:2000])
 
@@ -733,14 +732,14 @@ end
 plot(t_nom_sl, err_sl, linewidth=3, label="Eigen-axis slew",
      title="180° Slew: Eigen-axis vs Regulator", xlabel="Time (s)", ylabel="Error to q_final [deg]")
 plot!(t_nom_sl, err_rg, linewidth=3, label="Regulator only")
-savefig("figures/hw4/p4_slew_vs_regulator.png")
+#savefig("figures/hw4/p4_slew_vs_regulator.png")
 
 # Nominal vs actual angular velocity
 ω_act_mag = [norm(x_sl[11:13,k]) * 180/π for k = 1:N_sl]
 plot(t_nom_sl, ω_nom_mag, linewidth=3, label="Nominal")
 plot!(t_nom_sl, ω_act_mag, linewidth=3, label="Actual",
       title="Angular Velocity: Nominal vs Actual", xlabel="Time (s)", ylabel="||ω|| [deg/s]")
-savefig("figures/hw4/p4_omega_nom_actual.png")
+#savefig("figures/hw4/p4_omega_nom_actual.png")
 
 # Wheel torque: feedforward vs total (z-axis = eigen-axis)
 plot(t_nom_sl[1:N_sl-1], u_nom_sl[3,:], linewidth=3, label="Nominal τ_z (FF)",
@@ -748,7 +747,7 @@ plot(t_nom_sl[1:N_sl-1], u_nom_sl[3,:], linewidth=3, label="Nominal τ_z (FF)",
 plot!(t_nom_sl[1:N_sl-1], u_sl[3,:], linewidth=3, label="Total τ_z (FF+FB)")
 hline!([ 0.042], color=:red, linestyle=:dot, label="Limit ±0.042 Nm")
 hline!([-0.042], color=:red, linestyle=:dot, label=false)
-savefig("figures/hw4/p4_wheel_torque_z.png")
+#savefig("figures/hw4/p4_wheel_torque_z.png")
 
 # Nominal vs actual wheel angular momentum
 ρ_nom_m = [norm(ρ_nom_sl[:,k])  for k = 1:N_sl]
@@ -756,7 +755,7 @@ savefig("figures/hw4/p4_wheel_torque_z.png")
 plot(t_nom_sl, ρ_nom_m, linewidth=3, label="Nominal")
 plot!(t_nom_sl, ρ_act_m, linewidth=3, label="Actual",
       title="Wheel Angular Momentum Magnitude", xlabel="Time (s)", ylabel="||h_rw|| [N·m·s]")
-savefig("figures/hw4/p4_wheel_momentum.png")
+#savefig("figures/hw4/p4_wheel_momentum.png")
 
 
 
